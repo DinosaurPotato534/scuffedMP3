@@ -2,6 +2,8 @@
 #define AUDIO_MANAGER_H
 
 #include "config.h"
+#include "bluetoothManager.h"
+#include "mp3Bluetooth.h"
 
 class AudioManager {
   public:
@@ -19,15 +21,20 @@ class AudioManager {
     int getTrackCount();
     String getCurrentTrackName();
     bool isPlaying();
+    bool isBTConnected();
     
   private:
-    Audio _audio;
-    File _root;
     int _trackCount;
     int _currentTrackIndex;
     int _volume;
     String _currentTrackName;
     String* _trackList;
+    bool _isPlaying;
+    bool _isPaused;
+    
+    BluetoothManager _btManager;
+    File _root;
+    MP3Bluetooth _mp3BT;
     
     void loadTrack(int index);
     String getTrackNameFromPath(String path);

@@ -6,6 +6,8 @@ AudioManager::AudioManager() {
   _volume = DEFAULT_VOLUME;
   _currentTrackName = "";
   _trackList = nullptr;
+  _isPlaying = false;
+  _isPaused = false;
 }
 
 AudioManager::~AudioManager() {
@@ -16,8 +18,25 @@ AudioManager::~AudioManager() {
 }
 
 bool AudioManager::begin() {
-  _audio.setPinout(I2S_BCLK_PIN, I2S_LRCLK_PIN, I2S_DOUT_PIN);
-  _audio.setVolume(_volume); // 0-21
+  // Initialize MP3Bluetooth first
+  if (!_mp3BT.begin()) {
+    Serial.println("Failed to initialize MP3Bluetooth");
+    return false;
+  }
+  
+  // Then initialize Bluetooth manager
+  if (!_btManager.begin()) {
+    Serial.println("Failed to initialize Bluetooth");
+    return false;
+  }
+  
+  // Set up the Bluetooth data callback
+  _btManager.setDataCallback([this](uint8_t* data, int32_t len) -> int32_t {
+    return _mp3BT.getData(data, len);
+  });
+  
+  // Set initial volume
+  setVolume(_volume);
   return true;
 }
 
@@ -78,20 +97,21 @@ bool AudioManager::play() {
     return false;
   }
   
-  if (_audio.isRunning()) {
-    if (_audio.isPaused()) {
-      _audio.pauseResume();
-      return true;
-    }
-  } else {
+  if (_isPlaying && _isPaused) {
+    _mp3BT.resume();
+    _isPaused = false;
+    return true;
+  } else if (!_isPlaying) {
     loadTrack(_currentTrackIndex);
+    return _isPlaying;
   }
   return true;
 }
 
 void AudioManager::pause() {
-  if (_audio.isRunning()) {
-    _audio.pauseResume();
+  if (_isPlaying && !_isPaused) {
+    _mp3BT.pause();
+    _isPaused = true;
   }
 }
 
@@ -102,6 +122,8 @@ bool AudioManager::next() {
   
   _currentTrackIndex = (_currentTrackIndex + 1) % _trackCount;
   loadTrack(_currentTrackIndex);
+  _isPlaying = true;
+  _isPaused = false;
   return true;
 }
 
@@ -112,12 +134,19 @@ bool AudioManager::previous() {
   
   _currentTrackIndex = (_currentTrackIndex - 1 + _trackCount) % _trackCount;
   loadTrack(_currentTrackIndex);
+  _isPlaying = true;
+  _isPaused = false;
   return true;
 }
 
 void AudioManager::setVolume(int volume) {
   _volume = constrain(volume, MIN_VOLUME, MAX_VOLUME);
-  _audio.setVolume(map(_volume, MIN_VOLUME, MAX_VOLUME, 0, 21));
+  
+  // Apply software volume scaling to the Bluetooth stream
+  // Some devices may also support hardware volume via AVRCP
+  // but not all, so we implement our own volume control
+  float volumeScale = (float)_volume / MAX_VOLUME;
+  _mp3BT.setVolumeScale(volumeScale);
 }
 
 int AudioManager::getVolume() {
@@ -125,7 +154,16 @@ int AudioManager::getVolume() {
 }
 
 void AudioManager::handle() {
-  _audio.loop();
+  // Check if track finished playing and move to next track
+  if (_isPlaying && !_isPaused && _mp3BT.isFinished()) {
+    next();
+  }
+  
+  // Check Bluetooth connection status
+  if (_isPlaying && !_btManager.isConnected()) {
+    pause(); // Auto-pause if Bluetooth disconnected
+    Serial.println("Bluetooth disconnected - playback paused");
+  }
 }
 
 int AudioManager::getTrackCount() {
@@ -137,19 +175,29 @@ String AudioManager::getCurrentTrackName() {
 }
 
 bool AudioManager::isPlaying() {
-  return _audio.isRunning() && !_audio.isPaused();
+  return _isPlaying && !_isPaused;
+}
+
+bool AudioManager::isBTConnected() {
+  return _btManager.isConnected();
 }
 
 void AudioManager::loadTrack(int index) {
   if (index < 0 || index >= _trackCount) {
     return;
   }
+
+  _isPlaying = false;
+  _isPaused = false;
   
-  _audio.stopSong();
-  
-  const char* filepath = _trackList[index].c_str();
-  _audio.connecttoSD(filepath);
   _currentTrackName = getTrackNameFromPath(_trackList[index]);
+
+  if (_btManager.isConnected()) {
+    if (_mp3BT.openFile(_trackList[index].c_str())) {
+      _isPlaying = true;
+      _isPaused = false;
+    }
+  }
 }
 
 String AudioManager::getTrackNameFromPath(String path) {
