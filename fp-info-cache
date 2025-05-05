@@ -1,4 +1,4 @@
-25298004650423803
+25314162249923642
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -67003,6 +67003,13 @@ Yellow 5381 Series LED
 0
 2
 2
+Library
+ScrollWheel-40x12mm
+
+
+0
+16
+16
 MCP1825S-3302E_DB
 SOT230P700X180-4N
 
@@ -94814,6 +94821,13 @@ Logo WEEE
 0
 0
 0
+TTP229-BSF
+SOP64P600X175-28N
+<b>SSOP-28</b><br>
+
+0
+28
+28
 TerminalBlock
 TerminalBlock_Altech_AK300-2_P5.00mm
 Altech AK300 terminal block, pitch 5.0mm, 45 degree angled, see http://www.mouser.com/ds/2/16/PCBMETRC-24178.pdf
@@ -101626,7 +101640,63 @@ PJ-320A
 4
 3
 typeC
+12401598E4#2A
+
+
+0
+28
+28
+typeC
+HRO-TYPE-C-31-M-12
+
+
+0
+16
+13
+typeC
+HRO-TYPE-C-31-M-12-Assembly
+
+
+0
+16
+13
+typeC
+HRO-TYPE-C-31-M-12-HandSoldering
+
+
+0
+16
+13
+typeC
+HRO-TYPE-C-31-M-13
+
+
+0
+16
+13
+typeC
+USB_C_GCT_USB4085
+
+
+0
+20
+17
+typeC
 Wurth-632723300011
+
+
+0
+32
+27
+typeC
+Wurth-632723300011-HandSoldering
+
+
+0
+30
+26
+typeC
+Wurth-632723300011-MaximumExtensionMount
 
 
 0
